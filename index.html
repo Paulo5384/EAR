@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flujo Navegadores en Red — Necesidad vigente y alternativas de resolución</title>
+<style>
+  :root{
+    --bg: #f6f5f2;
+    --card: #ffffff;
+    --ink: #1f2320;
+    --ink-soft: #565b56;
+    --ink-mute: #8a8f89;
+    --line: #dcdcd6;
+    --line-strong: #b9bcb4;
+    --lane-a: #2f5e4e;
+    --lane-a-soft: #e6efe9;
+    --lane-a-tint: #f1f6f3;
+    --lane-b: #4a5a86;
+    --lane-b-soft: #e9ecf5;
+    --lane-b-tint: #f3f5fa;
+    --accent: #b5652f;
+    --accent-soft: #f4e8dd;
+    --radius: 10px;
+    --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    padding:32px 16px 64px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+  header{margin-bottom:28px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+    margin:0 0 8px;
+  }
+  h1{
+    font-size:24px;
+    font-weight:600;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:14px;
+    color:var(--ink-soft);
+    margin:0;
+    max-width:640px;
+  }
+  .legend{
+    display:flex;
+    gap:18px;
+    margin:18px 0 6px;
+    font-size:12px;
+    color:var(--ink-soft);
+    flex-wrap:wrap;
+  }
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block;}
+  .dot.a{background:var(--lane-a);}
+  .dot.b{background:var(--lane-b);}
+  .dot.c{background:var(--accent);}
+
+  .lanes{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-top:22px;
+  }
+  .lane-head{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line-strong);
+    margin-bottom:12px;
+  }
+  .lane-head.a{color:var(--lane-a);}
+  .lane-head.b{color:var(--lane-b);}
+
+  .node{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:0;
+    overflow:hidden;
+  }
+  .node[data-lane="a"]{border-left:3px solid var(--lane-a);}
+  .node[data-lane="b"]{border-left:3px solid var(--lane-b);}
+
+  .node-head{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-align:left;
+    font-family:var(--sans);
+  }
+  .node-head:hover{background:rgba(0,0,0,0.02);}
+  .node-title{font-size:14px;font-weight:600;color:var(--ink);}
+  .node-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .chev{
+    flex-shrink:0;
+    width:16px;height:16px;
+    color:var(--ink-mute);
+    transition:transform .15s ease;
+  }
+  .chev.open{transform:rotate(90deg);}
+
+  .node-detail{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .2s ease;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .node-detail.open{max-height:600px;}
+  .node-detail-inner{
+    padding:0 14px 14px 14px;
+    border-top:1px dashed var(--line);
+    padding-top:12px;
+    margin-top:-1px;
+  }
+  .node[data-lane="a"] .node-detail-inner{background:var(--lane-a-tint);}
+  .node[data-lane="b"] .node-detail-inner{background:var(--lane-b-tint);}
+  .node-detail ul{margin:8px 0 0;padding-left:18px;}
+  .node-detail li{margin-bottom:3px;}
+
+  .connector{
+    height:20px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:var(--ink-mute);
+  }
+  .connector svg{width:14px;height:14px;}
+
+  .branches{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+    margin-top:0;
+  }
+  .branch{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12px;
+    font-weight:600;
+    text-align:center;
+    cursor:pointer;
+  }
+  .branch:hover{border-color:var(--line-strong);}
+  .branch.si{color:var(--lane-a);border-color:var(--lane-a-soft);}
+
+  .converge-wrap{
+    margin-top:26px;
+    display:flex;
+    justify-content:center;
+  }
+  .converge{
+    max-width:480px;
+    width:100%;
+    background:var(--accent-soft);
+    border:1px solid var(--accent);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .converge .node-title{color:var(--accent);}
+  .converge .node-sub{color:#8a5427;}
+
+  footer{
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:11px;
+    font-family:var(--mono);
+    color:var(--ink-mute);
+    text-align:center;
+  }
+
+  @media (max-width:640px){
+    .lanes{grid-template-columns:1fr;}
+    .branches{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Navegadores en Red · Unidad de Gestión Territorial · HPM</p>
+    <h1>Flujo de gestión de lista de espera</h1>
+    <p class="subtitle">Dos carriles paralelos —necesidad vigente y alternativas de resolución— que convergen cuando la persona confirma que aún requiere atención. Haz clic en cualquier hito para ver su detalle.</p>
+    <div class="legend">
+      <span><i class="dot a"></i>Carril A · necesidad vigente</span>
+      <span><i class="dot b"></i>Carril B · alternativas de resolución</span>
+      <span><i class="dot c"></i>Convergencia</span>
+    </div>
+  </header>
+
+  <div class="lanes">
+    <div>
+      <div class="lane-head a">Carril A</div>
+      <div id="laneA"></div>
+    </div>
+    <div>
+      <div class="lane-head b">Carril B</div>
+      <div id="laneB"></div>
+    </div>
+  </div>
+
+  <div class="converge-wrap">
+    <div class="converge" id="convergeNode">
+      <div class="node-title">Gestión efectiva de resolución</div>
+      <div class="node-sub">Necesidad vigente + modalidad aplicable disponible</div>
+    </div>
+  </div>
+  <div class="node-detail" id="det-conv" style="max-width:480px;margin:0 auto;">
+    <div class="node-detail-inner" style="background:var(--accent-soft);border-top:none;">
+      Ambos carriles se encuentran cuando aparece el "Sí". La persona requiere atención y ya tiene modalidad(es)
+      aplicables identificadas de antemano por los referentes de modalidad, por lo que la resolución se gestiona
+      sin volver a evaluar elegibilidad desde cero.
+    </div>
+  </div>
+
+  <footer>Navegadores en Red · Unidad de Gestión Territorial · Servicio de Salud del Reloncaví</footer>
+</div>
+
+<script>
+const chevronSvg = `<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
+const arrowSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`;
+
+const laneA = [
+  {
+    t: "Lista de trabajo",
+    s: "Población EAR, percentil 75",
+    d: `Base con especialidad, sospecha diagnóstica, grupo etario, comuna y estado de gestión, agrupada en tres familias:
+    <ul><li>Requiere atención</li><li>No requiere atención</li><li>No contactable</li></ul>
+    Debe permitir caracterización territorial y georreferenciación de la demanda desde el inicio.`
+  },
+  {
+    t: "Depuración previa",
+    s: "Antes de una nueva campaña",
+    d: `Cruce con personas fallecidas, cruce con Portal Cero, identificación de campañas anteriores y verificación de
+    campaña en los últimos seis meses.<br><br>
+    Si recibió campaña reciente → no se repite.<br>
+    Si no tiene campaña reciente → continúa a campaña.<br><br>
+    Debe definirse el número máximo de campañas o intentos por persona.`
+  },
+  {
+    t: "Campaña Portal Cero",
+    s: "¿Aún requiere esta atención?",
+    d: `Pregunta central de contacto directo con la persona. Los tres resultados posibles se despliegan como ramas abajo.`
+  }
+];
+
+const laneB = [
+  {
+    t: "Lista de trabajo",
+    s: "Misma base, en paralelo",
+    d: `Este proceso puede comenzar desde el inicio, en paralelo a la contactabilidad del Carril A —no espera a que termine.`
+  },
+  {
+    t: "Identificación anticipada de alternativas",
+    s: "Referentes por modalidad",
+    d: `Cada referente de modalidad recibe la planilla y determina, para cada persona: <strong>APLICA / NO APLICA</strong>,
+    según especialidad, diagnóstico, rango etario y demás criterios de elegibilidad.`
+  },
+  {
+    t: "Cartera de alternativas por persona",
+    s: "No es una jerarquía rígida",
+    d: `No se prioriza una modalidad por sobre otra a priori. Primero se identifican todas las modalidades clínica y
+    operacionalmente aplicables; después se usa la que tenga disponibilidad efectiva y resuelva antes.
+    <ul>
+      <li>CAU</li>
+      <li>Hospital Digital</li>
+      <li>Teleconsulta HPM</li>
+      <li>Telemedicina HPM</li>
+      <li>Otras atenciones remotas</li>
+      <li>Especialistas en Red</li>
+      <li>Especialistas en establecimientos de la red</li>
+      <li>Atención presencial descentralizada</li>
+      <li>Atención presencial HPM</li>
+    </ul>
+    Pendiente: definir criterio de priorización cuando más de una modalidad aplique y esté disponible.`
+  }
+];
+
+const branches = [
+  { t: "Sí", cls: "si", d: `Requiere atención. No se realiza llamado confirmatorio adicional: la persona pasa directo a gestión de
+    resolución utilizando las alternativas ya identificadas en el Carril B.` },
+  { t: "No / indeterminado", cls: "", d: `Entra a un subproceso de validación para determinar la causal y el eventual cierre administrativo.` },
+  { t: "No contactable", cls: "", d: `Subproceso específico. Debe definirse regla de intentos, fuentes alternativas de contacto y criterios
+    de cierre o escalamiento.` }
+];
+
+function buildNode(item, lane, key){
+  const node = document.createElement('div');
+  node.className = 'node';
+  node.dataset.lane = lane;
+
+  const head = document.createElement('button');
+  head.className = 'node-head';
+  head.innerHTML = `
+    <div><div class="node-title">${item.t}</div><div class="node-sub">${item.s}</div></div>
+    ${chevronSvg}
+  `;
+
+  const detail = document.createElement('div');
+  detail.className = 'node-detail';
+  detail.id = 'det-' + key;
+  detail.innerHTML = `<div class="node-detail-inner">${item.d}</div>`;
+
+  head.addEventListener('click', () => {
+    const isOpen = detail.classList.toggle('open');
+    head.querySelector('.chev').classList.toggle('open', isOpen);
+  });
+
+  node.appendChild(head);
+  node.appendChild(detail);
+  return node;
+}
+
+function connector(container){
+  const c = document.createElement('div');
+  c.className = 'connector';
+  c.innerHTML = arrowSvg;
+  container.appendChild(c);
+}
+
+function renderLane(containerId, items, prefix){
+  const container = document.getElementById(containerId);
+  items.forEach((item, i) => {
+    if(i > 0) connector(container);
+    container.appendChild(buildNode(item, prefix === 'a' ? 'a' : 'b', prefix + i));
+  });
+}
+
+renderLane('laneA', laneA, 'a');
+renderLane('laneB', laneB, 'b');
+
+// Branches row under lane A
+connector(document.getElementById('laneA'));
+const branchWrap = document.createElement('div');
+branchWrap.className = 'branches';
+branches.forEach((b, i) => {
+  const el = document.createElement('div');
+  el.className = 'branch ' + b.cls;
+  el.textContent = b.t;
+  el.addEventListener('click', () => {
+    const d = document.getElementById('det-br' + i);
+    const open = d.classList.toggle('open');
+    el.style.borderColor = open ? 'var(--line-strong)' : 'var(--line)';
+  });
+  branchWrap.appendChild(el);
+});
+document.getElementById('laneA').appendChild(branchWrap);
+
+branches.forEach((b, i) => {
+  const detail = document.createElement('div');
+  detail.className = 'node-detail';
+  detail.id = 'det-br' + i;
+  detail.style.marginTop = '6px';
+  detail.innerHTML = `<div class="node-detail-inner" style="border-top:none;background:var(--lane-a-tint);border-radius:8px;">${b.d}</div>`;
+  document.getElementById('laneA').appendChild(detail);
+});
+
+// Converge node
+document.getElementById('convergeNode').addEventListener('click', () => {
+  document.getElementById('det-conv').classList.toggle('open');
+});
+</script>
+</body>
+</html>
