@@ -112,7 +112,7 @@
   .spec-item{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:3px 0;}
   #map{height:460px;border-radius:var(--radius);border:1px solid var(--line);}
   .map-legend{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--ink-soft);}
-  .map-legend .grad{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#cfe3d7,#2f6e4f);}
+  .map-legend .grad{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#fdecc4,#854f0b);}
 
   @media (max-width:640px){
     .lanes{grid-template-columns:1fr;} .branches{grid-template-columns:1fr;}
@@ -180,24 +180,26 @@
 
   <!-- ============ TAB: MAPA ============ -->
   <div class="tab-panel" id="tab-mapa">
-    <div class="map-banner">
-      <strong>Datos de ejemplo.</strong> Los valores por comuna y especialidad de este mapa son placeholders —
-      pendiente reemplazar con el export real de la hoja <code>Agregado_Reloncaví</code> (ver instrucciones de Claude
-      en el chat para generar el CSV). La estructura, filtros y comunas ya son reales.
-    </div>
     <p class="map-stats" id="map-stats"></p>
 
     <div class="map-controls">
       <div class="spec-panel">
         <div class="spec-panel-head">
-          <span>Especialidad</span>
+          <span>Especialidad (54)</span>
           <button id="spec-clear">Limpiar selección</button>
         </div>
+        <input id="spec-search" type="text" placeholder="Buscar especialidad..."
+          style="width:100%;margin-bottom:8px;padding:6px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:6px;font-family:var(--sans);">
         <div id="spec-list"></div>
       </div>
     </div>
 
     <div id="map"></div>
+    <div id="map-error" style="display:none;padding:14px;background:var(--pend-bg);border:1px solid var(--pend);border-radius:var(--radius);color:#5c2a2a;font-size:13px;">
+      No se pudo cargar el mapa (la librería Leaflet no llegó a cargar desde internet). Revisa tu conexión o
+      inténtalo desde otro navegador — el mapa necesita acceso a <code>unpkg.com</code>.
+      <br><button id="map-retry" style="margin-top:8px;font-family:var(--sans);font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--pend);border-radius:8px;padding:6px 12px;cursor:pointer;">Reintentar</button>
+    </div>
     <div class="map-legend">
       <span>Menos personas</span>
       <span class="grad"></span>
@@ -367,80 +369,107 @@ document.getElementById('toggle-all-btn').addEventListener('click', () => {
   document.getElementById('toggle-all-btn').textContent = allOpen ? 'Colapsar todo' : 'Expandir todo';
 });
 
-/* ===================== DATA: MAPA (PLACEHOLDER) ===================== */
-/* REEMPLAZAR con el export real de Agregado_Reloncaví (Comuna | Especialidad | N_personas). */
-const especialidadesEjemplo = [
-  "Cardiología","Ginecología","Oftalmología","Traumatología","Otorrinolaringología",
-  "Dermatología","Urología","Neurología","Cirugía general","Medicina interna"
-];
+/* ===================== DATA: MAPA (REAL — export Agregado_Reloncaví, corte P75 dic-2025) ===================== */
+const REAL_DATA = {"comunas": [{"comuna": "Puerto Montt", "lat": -41.4693, "lng": -72.9424, "porEspecialidad": {"Anestesiologia": 13, "Cardiologia": 190, "Cardiologia Pediatrica": 1, "Cirugia De Cabeza, Cuello Y Maxilofacial": 4, "Cirugia De Torax": 1, "Cirugia General": 90, "Cirugia Pediatrica": 2, "Cirugia Plastica Y Reparadora": 13, "Cirugia Vascular Periferica": 15, "Cirugia Y Traumatologia Buco Maxilofacial": 28, "Coloproctologia": 20, "Dermatologia": 27, "Diabetologia": 2, "Endocrinologia Adulto": 161, "Endocrinologia Pediatrica": 6, "Endodoncia": 85, "Enfermedades Respiratorias Del Adulto": 3, "Enfermedades Respiratorias Pediatricas": 3, "Gastroenterologia Adulto": 40, "Gastroenterologia Pediatrica": 4, "Genetica Clinica": 180, "Geriatria": 1, "Ginecologia": 117, "Ginecologia Pediatrica Y De La Adolescencia": 8, "Hematologia": 17, "Implantologia Buco Maxilofacial": 25, "Infectologia": 1, "Inmunologia": 3, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 82, "Medicina Fisica Y Rehabilitacion Pediatrica (Fisiatria Pediatrica)": 4, "Medicina Interna": 29, "Nefrologia Adulto": 7, "Nefrologia Pediatrico": 5, "Neurocirugia": 17, "Neurologia Adulto": 285, "Neurologia Pediatrica": 21, "Nutriologo": 5, "Nutriologo Pediatrico": 3, "Odontopediatria": 4, "Oftalmologia": 1221, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 62, "Otorrinolaringologia": 891, "Patologia Oral": 31, "Pediatria": 17, "Periodoncia": 28, "Psiquiatria Adulto": 49, "Psiquiatria Pediatrica Y De La Adolescencia": 10, "Rehabilitacion Oral": 86, "Reumatologia": 5, "Trastorno Temporomandibulares Y Dolor Orofacial": 16, "Traumatologia Y Ortopedia": 122, "Traumatologia Y Ortopedia Pediatrica": 4, "Urologia": 767, "Urologia Pediatrica": 2}}, {"comuna": "Puerto Varas", "lat": -41.3195, "lng": -72.9856, "porEspecialidad": {"Anestesiologia": 2, "Cardiologia": 41, "Cirugia De Cabeza, Cuello Y Maxilofacial": 2, "Cirugia De Torax": 1, "Cirugia General": 24, "Cirugia Plastica Y Reparadora": 1, "Cirugia Vascular Periferica": 5, "Cirugia Y Traumatologia Buco Maxilofacial": 8, "Coloproctologia": 8, "Dermatologia": 7, "Diabetologia": 1, "Endocrinologia Adulto": 13, "Endocrinologia Pediatrica": 2, "Endodoncia": 83, "Enfermedades Respiratorias Pediatricas": 2, "Gastroenterologia Adulto": 12, "Genetica Clinica": 17, "Ginecologia": 18, "Ginecologia Pediatrica Y De La Adolescencia": 3, "Hematologia": 1, "Implantologia Buco Maxilofacial": 4, "Infectologia": 1, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 10, "Medicina Interna": 1, "Nefrologia Adulto": 4, "Nefrologia Pediatrico": 1, "Neurocirugia": 7, "Neurologia Adulto": 62, "Neurologia Pediatrica": 8, "Odontopediatria": 2, "Oftalmologia": 216, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 21, "Otorrinolaringologia": 114, "Patologia Oral": 2, "Periodoncia": 16, "Psiquiatria Adulto": 10, "Psiquiatria Pediatrica Y De La Adolescencia": 1, "Rehabilitacion Oral": 19, "Reumatologia": 7, "Trastorno Temporomandibulares Y Dolor Orofacial": 2, "Traumatologia Y Ortopedia": 27, "Traumatologia Y Ortopedia Pediatrica": 2, "Urologia": 199, "Urologia Pediatrica": 1}}, {"comuna": "Cochamó", "lat": -41.5167, "lng": -72.2833, "porEspecialidad": {"Cardiologia": 1, "Cirugia General": 3, "Cirugia Y Traumatologia Buco Maxilofacial": 3, "Endocrinologia Adulto": 1, "Endodoncia": 10, "Gastroenterologia Adulto": 2, "Gastroenterologia Pediatrica": 1, "Genetica Clinica": 1, "Ginecologia": 1, "Neurocirugia": 1, "Neurologia Adulto": 5, "Oftalmologia": 9, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 1, "Otorrinolaringologia": 12, "Patologia Oral": 1, "Rehabilitacion Oral": 3, "Traumatologia Y Ortopedia": 1, "Urologia": 12}}, {"comuna": "Calbuco", "lat": -41.7667, "lng": -73.1333, "porEspecialidad": {"Cardiologia": 23, "Cirugia General": 18, "Cirugia Pediatrica": 2, "Cirugia Plastica Y Reparadora": 1, "Cirugia Vascular Periferica": 2, "Cirugia Y Traumatologia Buco Maxilofacial": 3, "Coloproctologia": 2, "Dermatologia": 2, "Endocrinologia Adulto": 27, "Endodoncia": 2, "Gastroenterologia Adulto": 6, "Genetica Clinica": 13, "Ginecologia": 8, "Ginecologia Pediatrica Y De La Adolescencia": 1, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 11, "Medicina Interna": 1, "Nefrologia Adulto": 2, "Neurocirugia": 5, "Neurologia Adulto": 53, "Neurologia Pediatrica": 10, "Nutriologo Pediatrico": 1, "Odontopediatria": 1, "Oftalmologia": 151, "Otorrinolaringologia": 195, "Patologia Oral": 6, "Pediatria": 1, "Psiquiatria Adulto": 4, "Psiquiatria Pediatrica Y De La Adolescencia": 3, "Rehabilitacion Oral": 1, "Reumatologia": 1, "Traumatologia Y Ortopedia": 23, "Traumatologia Y Ortopedia Pediatrica": 1, "Urologia": 109}}, {"comuna": "Maullín", "lat": -41.6167, "lng": -73.6, "porEspecialidad": {"Anestesiologia": 1, "Cardiologia": 16, "Cirugia General": 14, "Cirugia Pediatrica": 1, "Cirugia Vascular Periferica": 2, "Cirugia Y Traumatologia Buco Maxilofacial": 10, "Coloproctologia": 2, "Dermatologia": 6, "Endocrinologia Adulto": 13, "Endodoncia": 9, "Gastroenterologia Adulto": 1, "Genetica Clinica": 7, "Ginecologia": 8, "Ginecologia Pediatrica Y De La Adolescencia": 3, "Hematologia": 2, "Implantologia Buco Maxilofacial": 1, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 4, "Medicina Interna": 1, "Nefrologia Adulto": 1, "Neurocirugia": 4, "Neurologia Adulto": 26, "Neurologia Pediatrica": 3, "Odontopediatria": 2, "Oftalmologia": 80, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 7, "Otorrinolaringologia": 48, "Patologia Oral": 2, "Periodoncia": 1, "Psiquiatria Adulto": 3, "Psiquiatria Pediatrica Y De La Adolescencia": 2, "Rehabilitacion Oral": 2, "Trastorno Temporomandibulares Y Dolor Orofacial": 1, "Traumatologia Y Ortopedia": 11, "Urologia": 56}}, {"comuna": "Los Muermos", "lat": -41.4667, "lng": -73.5333, "porEspecialidad": {"Cardiologia": 13, "Cardiologia Pediatrica": 1, "Cirugia General": 10, "Cirugia Vascular Periferica": 1, "Cirugia Y Traumatologia Buco Maxilofacial": 6, "Dermatologia": 1, "Endocrinologia Adulto": 19, "Endodoncia": 28, "Gastroenterologia Adulto": 3, "Genetica Clinica": 8, "Ginecologia": 10, "Hematologia": 2, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 13, "Medicina Interna": 1, "Nefrologia Adulto": 2, "Neurocirugia": 3, "Neurologia Adulto": 27, "Neurologia Pediatrica": 4, "Oftalmologia": 133, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 7, "Otorrinolaringologia": 63, "Patologia Oral": 1, "Pediatria": 1, "Periodoncia": 2, "Psiquiatria Adulto": 6, "Psiquiatria Pediatrica Y De La Adolescencia": 3, "Rehabilitacion Oral": 21, "Trastorno Temporomandibulares Y Dolor Orofacial": 1, "Traumatologia Y Ortopedia": 5, "Urologia": 57, "Urologia Pediatrica": 2}}, {"comuna": "Fresia", "lat": -41.1747, "lng": -73.4372, "porEspecialidad": {"Cardiologia": 24, "Cirugia De Cabeza, Cuello Y Maxilofacial": 1, "Cirugia De Torax": 1, "Cirugia General": 5, "Cirugia Vascular Periferica": 4, "Cirugia Y Traumatologia Buco Maxilofacial": 3, "Dermatologia": 2, "Endocrinologia Adulto": 1, "Endocrinologia Pediatrica": 1, "Endodoncia": 5, "Enfermedades Respiratorias Del Adulto": 1, "Gastroenterologia Adulto": 2, "Genetica Clinica": 6, "Geriatria": 1, "Ginecologia": 10, "Hematologia": 1, "Implantologia Buco Maxilofacial": 3, "Inmunologia": 1, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 2, "Medicina Interna": 1, "Neurocirugia": 3, "Neurologia Adulto": 23, "Neurologia Pediatrica": 3, "Oftalmologia": 97, "Otorrinolaringologia": 64, "Patologia Oral": 5, "Psiquiatria Adulto": 4, "Psiquiatria Pediatrica Y De La Adolescencia": 4, "Traumatologia Y Ortopedia": 12, "Traumatologia Y Ortopedia Pediatrica": 1, "Urologia": 80}}, {"comuna": "Frutillar", "lat": -41.1256, "lng": -73.0645, "porEspecialidad": {"Anestesiologia": 2, "Cardiologia": 19, "Cirugia General": 13, "Cirugia Pediatrica": 1, "Cirugia Plastica Y Reparadora": 1, "Cirugia Vascular Periferica": 3, "Cirugia Y Traumatologia Buco Maxilofacial": 4, "Coloproctologia": 2, "Dermatologia": 4, "Diabetologia": 1, "Endocrinologia Adulto": 1, "Enfermedades Respiratorias Del Adulto": 1, "Gastroenterologia Adulto": 3, "Gastroenterologia Pediatrica": 1, "Genetica Clinica": 8, "Geriatria": 2, "Ginecologia": 12, "Ginecologia Pediatrica Y De La Adolescencia": 1, "Hematologia": 5, "Implantologia Buco Maxilofacial": 6, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 6, "Medicina Fisica Y Rehabilitacion Pediatrica (Fisiatria Pediatrica)": 1, "Medicina Interna": 1, "Nefrologia Adulto": 1, "Neurocirugia": 3, "Neurologia Adulto": 32, "Neurologia Pediatrica": 5, "Oftalmologia": 122, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 1, "Otorrinolaringologia": 90, "Patologia Oral": 4, "Periodoncia": 1, "Psiquiatria Adulto": 1, "Psiquiatria Pediatrica Y De La Adolescencia": 1, "Trastorno Temporomandibulares Y Dolor Orofacial": 1, "Traumatologia Y Ortopedia": 16, "Urologia": 76}}, {"comuna": "Llanquihue", "lat": -41.25, "lng": -72.9833, "porEspecialidad": {"Anestesiologia": 2, "Cardiologia": 15, "Cirugia General": 5, "Cirugia Plastica Y Reparadora": 1, "Cirugia Y Traumatologia Buco Maxilofacial": 6, "Coloproctologia": 3, "Dermatologia": 3, "Endocrinologia Adulto": 5, "Endocrinologia Pediatrica": 1, "Endodoncia": 13, "Gastroenterologia Adulto": 2, "Genetica Clinica": 5, "Ginecologia": 6, "Ginecologia Pediatrica Y De La Adolescencia": 1, "Hematologia": 1, "Implantologia Buco Maxilofacial": 1, "Inmunologia": 1, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 6, "Medicina Fisica Y Rehabilitacion Pediatrica (Fisiatria Pediatrica)": 1, "Nefrologia Adulto": 1, "Nefrologia Pediatrico": 1, "Neurocirugia": 1, "Neurologia Adulto": 18, "Neurologia Pediatrica": 5, "Oftalmologia": 100, "Otorrinolaringologia": 67, "Patologia Oral": 1, "Periodoncia": 1, "Psiquiatria Adulto": 6, "Trastorno Temporomandibulares Y Dolor Orofacial": 2, "Traumatologia Y Ortopedia": 6, "Traumatologia Y Ortopedia Pediatrica": 1, "Urologia": 77}}, {"comuna": "Chaitén", "lat": -42.9167, "lng": -72.7167, "porEspecialidad": {"Cardiologia": 3, "Cirugia General": 4, "Cirugia Vascular Periferica": 2, "Cirugia Y Traumatologia Buco Maxilofacial": 1, "Dermatologia": 4, "Diabetologia": 1, "Endodoncia": 4, "Gastroenterologia Adulto": 5, "Ginecologia": 3, "Implantologia Buco Maxilofacial": 3, "Inmunologia": 1, "Medicina Interna": 2, "Nefrologia Adulto": 1, "Neurocirugia": 2, "Neurologia Pediatrica": 1, "Oftalmologia": 9, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 5, "Otorrinolaringologia": 15, "Patologia Oral": 1, "Periodoncia": 4, "Psiquiatria Pediatrica Y De La Adolescencia": 1, "Rehabilitacion Oral": 2, "Trastorno Temporomandibulares Y Dolor Orofacial": 1, "Traumatologia Y Ortopedia": 11, "Urologia": 11}}, {"comuna": "Futaleufú", "lat": -43.1833, "lng": -71.8667, "porEspecialidad": {"Cardiologia": 5, "Cirugia De Cabeza, Cuello Y Maxilofacial": 1, "Cirugia General": 4, "Cirugia Pediatrica": 1, "Cirugia Vascular Periferica": 4, "Dermatologia": 2, "Endocrinologia Adulto": 1, "Endodoncia": 1, "Gastroenterologia Adulto": 1, "Genetica Clinica": 2, "Geriatria": 1, "Ginecologia": 10, "Inmunologia": 1, "Odontopediatria": 1, "Oftalmologia": 12, "Otorrinolaringologia": 19, "Patologia Oral": 4, "Psiquiatria Adulto": 1, "Psiquiatria Pediatrica Y De La Adolescencia": 2, "Traumatologia Y Ortopedia": 1, "Urologia": 16}}, {"comuna": "Hualaihué", "lat": -42.0333, "lng": -72.6667, "porEspecialidad": {"Cardiologia": 13, "Cirugia General": 7, "Cirugia Plastica Y Reparadora": 1, "Cirugia Vascular Periferica": 2, "Cirugia Y Traumatologia Buco Maxilofacial": 3, "Coloproctologia": 6, "Dermatologia": 3, "Endocrinologia Adulto": 11, "Endodoncia": 25, "Enfermedades Respiratorias Pediatricas": 1, "Gastroenterologia Adulto": 23, "Genetica Clinica": 5, "Ginecologia": 11, "Implantologia Buco Maxilofacial": 2, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 2, "Medicina Interna": 4, "Neurocirugia": 4, "Neurologia Adulto": 37, "Neurologia Pediatrica": 3, "Odontopediatria": 1, "Oftalmologia": 35, "Ortodoncia Y Ortopedia Dento Maxilo Facial": 1, "Otorrinolaringologia": 46, "Patologia Oral": 2, "Pediatria": 3, "Periodoncia": 1, "Psiquiatria Adulto": 4, "Psiquiatria Pediatrica Y De La Adolescencia": 8, "Rehabilitacion Oral": 2, "Reumatologia": 1, "Traumatologia Y Ortopedia": 15, "Urologia": 43}}, {"comuna": "Palena", "lat": -43.6167, "lng": -71.7967, "porEspecialidad": {"Cardiologia": 2, "Cirugia General": 7, "Cirugia Vascular Periferica": 1, "Dermatologia": 1, "Genetica Clinica": 3, "Ginecologia": 2, "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)": 2, "Neurocirugia": 1, "Neurologia Adulto": 1, "Oftalmologia": 5, "Otorrinolaringologia": 5, "Patologia Oral": 1, "Psiquiatria Pediatrica Y De La Adolescencia": 2, "Trastorno Temporomandibulares Y Dolor Orofacial": 1, "Traumatologia Y Ortopedia": 6, "Urologia": 2}}], "especialidades": ["Anestesiologia", "Cardiologia", "Cardiologia Pediatrica", "Cirugia De Cabeza, Cuello Y Maxilofacial", "Cirugia De Torax", "Cirugia General", "Cirugia Pediatrica", "Cirugia Plastica Y Reparadora", "Cirugia Vascular Periferica", "Cirugia Y Traumatologia Buco Maxilofacial", "Coloproctologia", "Dermatologia", "Diabetologia", "Endocrinologia Adulto", "Endocrinologia Pediatrica", "Endodoncia", "Enfermedades Respiratorias Del Adulto", "Enfermedades Respiratorias Pediatricas", "Gastroenterologia Adulto", "Gastroenterologia Pediatrica", "Genetica Clinica", "Geriatria", "Ginecologia", "Ginecologia Pediatrica Y De La Adolescencia", "Hematologia", "Implantologia Buco Maxilofacial", "Infectologia", "Inmunologia", "Medicina Fisica Y Rehabilitacion (Fisiatria Adulto)", "Medicina Fisica Y Rehabilitacion Pediatrica (Fisiatria Pediatrica)", "Medicina Interna", "Nefrologia Adulto", "Nefrologia Pediatrico", "Neurocirugia", "Neurologia Adulto", "Neurologia Pediatrica", "Nutriologo", "Nutriologo Pediatrico", "Odontopediatria", "Oftalmologia", "Ortodoncia Y Ortopedia Dento Maxilo Facial", "Otorrinolaringologia", "Patologia Oral", "Pediatria", "Periodoncia", "Psiquiatria Adulto", "Psiquiatria Pediatrica Y De La Adolescencia", "Rehabilitacion Oral", "Reumatologia", "Trastorno Temporomandibulares Y Dolor Orofacial", "Traumatologia Y Ortopedia", "Traumatologia Y Ortopedia Pediatrica", "Urologia", "Urologia Pediatrica"]};
 
-const comunasReloncavi = [
-  { comuna:"Puerto Montt",  lat:-41.4693, lng:-72.9424 },
-  { comuna:"Puerto Varas",  lat:-41.3195, lng:-72.9856 },
-  { comuna:"Cochamó",       lat:-41.5167, lng:-72.2833 },
-  { comuna:"Calbuco",       lat:-41.7667, lng:-73.1333 },
-  { comuna:"Maullín",       lat:-41.6167, lng:-73.6000 },
-  { comuna:"Los Muermos",   lat:-41.4667, lng:-73.5333 },
-  { comuna:"Fresia",        lat:-41.1747, lng:-73.4372 },
-  { comuna:"Frutillar",     lat:-41.1256, lng:-73.0645 },
-  { comuna:"Llanquihue",    lat:-41.2500, lng:-72.9833 },
-  { comuna:"Chaitén",       lat:-42.9167, lng:-72.7167 },
-  { comuna:"Futaleufú",     lat:-43.1833, lng:-71.8667 },
-  { comuna:"Hualaihué",     lat:-42.0333, lng:-72.6667 },
-  { comuna:"Palena",        lat:-43.6167, lng:-71.7967 }
-];
-
-// Genera conteos placeholder por comuna x especialidad (reemplazar por datos reales)
-function seedRandom(seed){ let s = seed; return () => { s = (s*9301+49297)%233280; return s/233280; }; }
-const rnd = seedRandom(42);
-comunasReloncavi.forEach(c => {
-  c.porEspecialidad = {};
-  const base = c.comuna === "Puerto Montt" ? 12 : (c.comuna === "Puerto Varas" ? 6 : 1);
-  especialidadesEjemplo.forEach(e => {
-    c.porEspecialidad[e] = Math.round(base * (0.3 + rnd()*2.2));
-  });
+const comunasReloncavi = REAL_DATA.comunas.map(c => {
   c.total = Object.values(c.porEspecialidad).reduce((a,b)=>a+b,0);
+  return c;
 });
+const especialidadesEjemplo = REAL_DATA.especialidades; // 54 especialidades reales
 
-/* ===================== PANEL DE ESPECIALIDADES ===================== */
+/* ===================== PANEL DE ESPECIALIDADES (con buscador) ===================== */
 const specList = document.getElementById('spec-list');
-especialidadesEjemplo.forEach((esp, i) => {
-  const row = document.createElement('label');
-  row.className = 'spec-item';
-  row.innerHTML = `<input type="checkbox" class="spec-check" value="${esp}"> ${esp}`;
-  specList.appendChild(row);
-});
+function renderSpecList(filter){
+  specList.innerHTML = '';
+  const checked = new Set(Array.from(document.querySelectorAll('.spec-check:checked')).map(c => c.value));
+  especialidadesEjemplo
+    .filter(e => e.toLowerCase().includes(filter.toLowerCase()))
+    .forEach(esp => {
+      const row = document.createElement('label');
+      row.className = 'spec-item';
+      const isChecked = checked.has(esp) ? 'checked' : '';
+      row.innerHTML = `<input type="checkbox" class="spec-check" value="${esp}" ${isChecked}> ${esp}`;
+      specList.appendChild(row);
+    });
+  document.querySelectorAll('.spec-check').forEach(c => c.addEventListener('change', updateMap));
+}
+renderSpecList('');
+document.getElementById('spec-search').addEventListener('input', (e) => renderSpecList(e.target.value));
 document.getElementById('spec-clear').addEventListener('click', () => {
   document.querySelectorAll('.spec-check').forEach(c => c.checked = false);
   updateMap();
 });
-document.querySelectorAll('.spec-check').forEach(c => c.addEventListener('change', updateMap));
 
-/* ===================== MAPA LEAFLET ===================== */
-let markers = [];
-function initMap(){
-  const map = L.map('map', { scrollWheelZoom:false }).setView([-41.9, -72.6], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors', maxZoom: 12
-  }).addTo(map);
-  window._map = map;
-  comunasReloncavi.forEach(c => {
-    const marker = L.circleMarker([c.lat, c.lng], { radius:8, weight:1 }).addTo(map);
-    marker._comuna = c;
-    marker.bindTooltip('', { sticky:true });
-    markers.push(marker);
-  });
-  updateMap();
+/* ===================== MAPA COROPLÉTICO LEAFLET (polígonos reales) ===================== */
+/* Límites comunales: pachadotdev/chilemapas (SUBDERE/IGM/DIFROL/INE, DPA), filtrado a las 13 comunas Reloncaví. */
+let geoLayer = null;
+let geojsonData = null;
+
+// Normaliza nombres para cruzar GeoJSON <-> datos NAV (sin tilde, minúsculas)
+function normName(s){
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 }
+const comunaByNorm = {};
+comunasReloncavi.forEach(c => { comunaByNorm[normName(c.comuna)] = c; });
+
 function colorFor(value, max){
-  const t = max > 0 ? value / max : 0;
-  const stops = [[207,227,215],[47,110,79]]; // c-teal claro -> oscuro
+  const t = max > 0 ? Math.sqrt(value / max) : 0; // raíz para no aplastar comunas pequeñas
+  const stops = [[253,236,204],[133,79,11]]; // c-amber: claro -> oscuro (contrasta con basemap gris/verde tenue)
   const r = Math.round(stops[0][0] + (stops[1][0]-stops[0][0])*t);
   const g = Math.round(stops[0][1] + (stops[1][1]-stops[0][1])*t);
   const b = Math.round(stops[0][2] + (stops[1][2]-stops[0][2])*t);
   return `rgb(${r},${g},${b})`;
 }
+
+async function initMap(){
+  if(typeof L === 'undefined'){
+    document.getElementById('map').style.display = 'none';
+    document.getElementById('map-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('map').style.display = 'block';
+  document.getElementById('map-error').style.display = 'none';
+
+  if(!window._map){
+    const map = L.map('map', { scrollWheelZoom:false }).setView([-42.2, -72.6], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap, &copy; CARTO', maxZoom: 12
+    }).addTo(map);
+    window._map = map;
+  }
+
+  if(!geojsonData){
+    try{
+      const res = await fetch('reloncavi.geojson');
+      geojsonData = await res.json();
+    } catch(err){
+      document.getElementById('map').style.display = 'none';
+      document.getElementById('map-error').style.display = 'block';
+      document.getElementById('map-error').innerHTML =
+        'No se pudo cargar el archivo <code>reloncavi.geojson</code>. Verifica que esté en la misma carpeta que este HTML (o el mismo repo en Netlify/GitHub Pages).<br>' +
+        '<button id="map-retry-2" style="margin-top:8px;font-family:var(--sans);font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--pend);border-radius:8px;padding:6px 12px;cursor:pointer;">Reintentar</button>';
+      document.getElementById('map-retry-2').addEventListener('click', initMap);
+      return;
+    }
+  }
+
+  if(geoLayer){ geoLayer.remove(); }
+  geoLayer = L.geoJSON(geojsonData, {
+    style: () => ({ color:'#5c4413', weight:1, fillOpacity:0.85, fillColor:'#f5e5c4' }),
+    onEachFeature: (feature, layer) => {
+      const c = comunaByNorm[normName(feature.properties.comuna)];
+      layer._comunaData = c;
+      layer.bindTooltip('', { sticky:true });
+    }
+  }).addTo(window._map);
+
+  updateMap();
+}
+document.getElementById('map-retry').addEventListener('click', initMap);
+
 function updateMap(){
+  if(!geoLayer) return;
   const selected = Array.from(document.querySelectorAll('.spec-check:checked')).map(c => c.value);
   const values = comunasReloncavi.map(c => {
     if(selected.length === 0) return c.total;
@@ -449,21 +478,23 @@ function updateMap(){
   const max = Math.max(...values, 1);
   let totalShown = 0;
 
-  markers.forEach((m, i) => {
-    const c = m._comuna;
-    const v = values[i];
+  geoLayer.eachLayer(layer => {
+    const c = layer._comunaData;
+    if(!c) return;
+    const v = selected.length === 0 ? c.total : selected.reduce((s,e) => s + (c.porEspecialidad[e]||0), 0);
     totalShown += v;
-    const r = 6 + 16 * (max > 0 ? v / max : 0);
-    m.setStyle({ radius:r, fillColor:colorFor(v, max), fillOpacity:0.85, color:'#2f6e4f' });
+    layer.setStyle({ fillColor: colorFor(v, max), color:'#5c4413', weight:1, fillOpacity:0.85 });
     const label = selected.length === 0
       ? `${c.comuna}: ${v} personas (total)`
       : `${c.comuna}: ${v} personas (${selected.length} especialidad${selected.length>1?'es':''} seleccionada${selected.length>1?'s':''})`;
-    m.setTooltipContent(label);
+    layer.setTooltipContent(label);
   });
+  // sumar totalShown correctamente (evitar doble conteo si eachLayer itera distinto orden)
+  totalShown = values.reduce((a,b)=>a+b,0);
 
   document.getElementById('map-stats').textContent = selected.length === 0
-    ? `Mostrando total por comuna · ${totalShown} personas en la red Reloncaví (dato de ejemplo)`
-    : `Filtrado por: ${selected.join(', ')} · ${totalShown} personas (dato de ejemplo)`;
+    ? `Mostrando total por comuna · ${totalShown} de 9.124 personas en lista P75, red Reloncaví (excluye #N/D en especialidad)`
+    : `Filtrado por: ${selected.join(', ')} · ${totalShown} personas`;
 }
 
 window.addEventListener('load', initMap);
