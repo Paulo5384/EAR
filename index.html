@@ -115,15 +115,30 @@
   .map-controls{display:flex;gap:16px;margin-bottom:14px;align-items:flex-start;flex-wrap:wrap;}
   .spec-panel{
     background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:10px 12px;max-height:220px;overflow-y:auto;min-width:220px;flex:1;
+    max-height:280px;min-width:220px;flex:1;display:flex;flex-direction:column;overflow:hidden;
   }
-  .spec-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .spec-panel-head span{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
-  .spec-panel-head button{font-size:11px;background:none;border:none;color:var(--accent);cursor:pointer;font-weight:600;}
+  .spec-panel-sticky{padding:10px 12px 8px;border-bottom:1px solid var(--line);flex-shrink:0;background:var(--card);}
+  .spec-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;}
+  .spec-panel-head span{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .spec-panel-actions{display:flex;gap:10px;}
+  .spec-panel-actions button{font-size:11px;background:none;border:none;color:var(--accent);cursor:pointer;font-weight:600;padding:0;}
+  .spec-scroll{overflow-y:auto;padding:8px 12px 10px;}
   .spec-item{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:3px 0;}
   #map{height:460px;border-radius:var(--radius);border:1px solid var(--line);}
   .map-legend{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:12px;color:var(--ink-soft);}
-  .map-legend .grad{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#fdecc4,#854f0b);}
+  .map-legend .grad{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,#dceefb,#0b5c85);}
+  .comuna-label{
+    background:rgba(255,255,255,0.85)!important;border:none!important;box-shadow:none!important;font-family:var(--mono);
+    font-size:11px;font-weight:600;color:var(--ink);padding:1px 4px;border-radius:4px;
+  }
+  .comuna-label::before{display:none;}
+  .ranking{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;}
+  .ranking h3{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px;}
+  .rank-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;}
+  .rank-row .rname{flex:0 0 130px;color:var(--ink);}
+  .rank-row .rbar-wrap{flex:1;background:#eef2f8;border-radius:4px;overflow:hidden;height:14px;}
+  .rank-row .rbar{height:100%;background:#0b5c85;}
+  .rank-row .rval{flex:0 0 44px;text-align:right;font-family:var(--mono);color:var(--ink-soft);}
 
   @media (max-width:640px){
     .lanes{grid-template-columns:1fr;} .branches{grid-template-columns:1fr;}
@@ -208,13 +223,20 @@
 
     <div class="map-controls">
       <div class="spec-panel">
-        <div class="spec-panel-head">
-          <span>Especialidad (54)</span>
-          <button id="spec-clear">Limpiar selección</button>
+        <div class="spec-panel-sticky">
+          <div class="spec-panel-head">
+            <span>Especialidad (54)</span>
+            <div class="spec-panel-actions">
+              <button id="spec-all">Seleccionar todo</button>
+              <button id="spec-clear">Limpiar selección</button>
+            </div>
+          </div>
+          <input id="spec-search" type="text" placeholder="Buscar especialidad..."
+            style="width:100%;padding:6px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:6px;font-family:var(--sans);">
         </div>
-        <input id="spec-search" type="text" placeholder="Buscar especialidad..."
-          style="width:100%;margin-bottom:8px;padding:6px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:6px;font-family:var(--sans);">
-        <div id="spec-list"></div>
+        <div class="spec-scroll" id="spec-scroll">
+          <div id="spec-list"></div>
+        </div>
       </div>
     </div>
 
@@ -225,9 +247,14 @@
       <br><button id="map-retry" style="margin-top:8px;font-family:var(--sans);font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--pend);border-radius:8px;padding:6px 12px;cursor:pointer;">Reintentar</button>
     </div>
     <div class="map-legend">
-      <span>Menos personas</span>
+      <span id="legend-min">Menos</span>
       <span class="grad"></span>
-      <span>Más personas</span>
+      <span id="legend-max">Más</span>
+    </div>
+
+    <div class="ranking">
+      <h3 id="ranking-title">Ranking de comunas — total</h3>
+      <div id="ranking-list"></div>
     </div>
   </div>
 
@@ -424,6 +451,11 @@ document.getElementById('spec-clear').addEventListener('click', () => {
   document.querySelectorAll('.spec-check').forEach(c => c.checked = false);
   updateMap();
 });
+document.getElementById('spec-all').addEventListener('click', () => {
+  // Selecciona todas las especialidades actualmente visibles (respeta el filtro de búsqueda)
+  document.querySelectorAll('.spec-check').forEach(c => c.checked = true);
+  updateMap();
+});
 
 /* ===================== MAPA COROPLÉTICO LEAFLET (polígonos reales) ===================== */
 /* Límites comunales: pachadotdev/chilemapas (SUBDERE/IGM/DIFROL/INE, DPA), filtrado a las 13 comunas Reloncaví. */
@@ -439,7 +471,7 @@ comunasReloncavi.forEach(c => { comunaByNorm[normName(c.comuna)] = c; });
 
 function colorFor(value, max){
   const t = max > 0 ? Math.sqrt(value / max) : 0; // raíz para no aplastar comunas pequeñas
-  const stops = [[253,236,204],[133,79,11]]; // c-amber: claro -> oscuro (contrasta con basemap gris/verde tenue)
+  const stops = [[220,238,251],[11,92,133]]; // celeste claro -> azul oscuro
   const r = Math.round(stops[0][0] + (stops[1][0]-stops[0][0])*t);
   const g = Math.round(stops[0][1] + (stops[1][1]-stops[0][1])*t);
   const b = Math.round(stops[0][2] + (stops[1][2]-stops[0][2])*t);
@@ -480,11 +512,20 @@ async function initMap(){
 
   if(geoLayer){ geoLayer.remove(); }
   geoLayer = L.geoJSON(geojsonData, {
-    style: () => ({ color:'#5c4413', weight:1, fillOpacity:0.85, fillColor:'#f5e5c4' }),
+    style: () => ({ color:'#0b5c85', weight:1, fillOpacity:0.85, fillColor:'#dceefb' }),
     onEachFeature: (feature, layer) => {
       const c = comunaByNorm[normName(feature.properties.comuna)];
       layer._comunaData = c;
       layer.bindTooltip('', { sticky:true });
+      if(c){
+        // Etiqueta con el valor siempre visible, útil en pantalla de reunión (sin necesidad de pasar el mouse)
+        const center = layer.getBounds().getCenter();
+        const label = L.marker(center, {
+          icon: L.divIcon({ className:'comuna-label', html:'', iconSize:null }),
+          interactive:false
+        }).addTo(window._map);
+        layer._label = label;
+      }
     }
   }).addTo(window._map);
 
@@ -500,25 +541,42 @@ function updateMap(){
     return selected.reduce((sum, e) => sum + (c.porEspecialidad[e] || 0), 0);
   });
   const max = Math.max(...values, 1);
-  let totalShown = 0;
+  const min = Math.min(...values);
 
   geoLayer.eachLayer(layer => {
     const c = layer._comunaData;
     if(!c) return;
     const v = selected.length === 0 ? c.total : selected.reduce((s,e) => s + (c.porEspecialidad[e]||0), 0);
-    totalShown += v;
-    layer.setStyle({ fillColor: colorFor(v, max), color:'#5c4413', weight:1, fillOpacity:0.85 });
+    layer.setStyle({ fillColor: colorFor(v, max), color:'#0b5c85', weight:1, fillOpacity:0.85 });
     const label = selected.length === 0
       ? `${c.comuna}: ${v} personas (total)`
       : `${c.comuna}: ${v} personas (${selected.length} especialidad${selected.length>1?'es':''} seleccionada${selected.length>1?'s':''})`;
     layer.setTooltipContent(label);
+    if(layer._label) layer._label.setIcon(L.divIcon({ className:'comuna-label', html:`${c.comuna.split(' ')[0]}: ${v}`, iconSize:null }));
   });
-  // sumar totalShown correctamente (evitar doble conteo si eachLayer itera distinto orden)
-  totalShown = values.reduce((a,b)=>a+b,0);
+
+  const totalShown = values.reduce((a,b)=>a+b,0);
 
   document.getElementById('map-stats').textContent = selected.length === 0
     ? `Mostrando total por comuna · ${totalShown} de 9.124 personas en lista P75, red Reloncaví (excluye #N/D en especialidad)`
     : `Filtrado por: ${selected.join(', ')} · ${totalShown} personas`;
+
+  document.getElementById('legend-min').textContent = `${min}`;
+  document.getElementById('legend-max').textContent = `${max}`;
+
+  // Ranking de comunas ordenado de mayor a menor
+  const ranked = comunasReloncavi.map((c,i) => ({ comuna:c.comuna, v:values[i] })).sort((a,b) => b.v - a.v);
+  const rankMax = ranked[0] ? ranked[0].v : 1;
+  document.getElementById('ranking-title').textContent = selected.length === 0
+    ? 'Ranking de comunas — total'
+    : `Ranking de comunas — ${selected.length} especialidad${selected.length>1?'es':''} seleccionada${selected.length>1?'s':''}`;
+  document.getElementById('ranking-list').innerHTML = ranked.map(r => `
+    <div class="rank-row">
+      <span class="rname">${r.comuna}</span>
+      <span class="rbar-wrap"><span class="rbar" style="width:${rankMax>0 ? (r.v/rankMax*100) : 0}%"></span></span>
+      <span class="rval">${r.v}</span>
+    </div>
+  `).join('');
 }
 
 window.addEventListener('load', initMap);
