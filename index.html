@@ -140,6 +140,22 @@
   .rank-row .rbar{height:100%;background:#0b5c85;}
   .rank-row .rval{flex:0 0 44px;text-align:right;font-family:var(--mono);color:var(--ink-soft);}
 
+  .comuna-detail{
+    margin-top:12px;background:var(--card);border:1px solid var(--lane-b);border-left:3px solid var(--lane-b);
+    border-radius:var(--radius);padding:12px 14px;
+  }
+  .comuna-detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+  .comuna-detail-head h3{font-size:15px;font-weight:600;margin:0;color:var(--ink);}
+  .comuna-detail-head p{font-size:12px;color:var(--ink-soft);margin:2px 0 0;}
+  .comuna-detail-head button{background:none;border:none;color:var(--ink-mute);cursor:pointer;font-size:14px;padding:2px 4px;}
+  .comuna-detail-head button:hover{color:var(--ink);}
+  .cd-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;}
+  .cd-row .cname{flex:0 0 200px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cd-row .cbar-wrap{flex:1;background:#eef2f8;border-radius:4px;overflow:hidden;height:12px;}
+  .cd-row .cbar{height:100%;background:var(--lane-b);}
+  .cd-row .cval{flex:0 0 34px;text-align:right;font-family:var(--mono);color:var(--ink-soft);}
+  .cd-more{font-size:11.5px;color:var(--ink-mute);margin-top:6px;}
+
   @media (max-width:640px){
     .lanes{grid-template-columns:1fr;} .branches{grid-template-columns:1fr;}
     .map-controls{flex-direction:column;} #map{height:360px;}
@@ -241,11 +257,22 @@
     </div>
 
     <div id="map"></div>
+    <div class="comuna-detail" id="comuna-detail" style="display:none;">
+      <div class="comuna-detail-head">
+        <div>
+          <h3 id="cd-title">Comuna</h3>
+          <p id="cd-sub">0 personas</p>
+        </div>
+        <button id="cd-close" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="cd-list"></div>
+    </div>
     <div id="map-error" style="display:none;padding:14px;background:var(--pend-bg);border:1px solid var(--pend);border-radius:var(--radius);color:#5c2a2a;font-size:13px;">
       No se pudo cargar el mapa (la librería Leaflet no llegó a cargar desde internet). Revisa tu conexión o
       inténtalo desde otro navegador — el mapa necesita acceso a <code>unpkg.com</code>.
       <br><button id="map-retry" style="margin-top:8px;font-family:var(--sans);font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--pend);border-radius:8px;padding:6px 12px;cursor:pointer;">Reintentar</button>
     </div>
+    <p style="font-size:11.5px;color:var(--ink-mute);margin:8px 0 0;">Haz clic en una comuna del mapa para ver su detalle por especialidad.</p>
     <div class="map-legend">
       <span id="legend-min">Menos</span>
       <span class="grad"></span>
@@ -517,6 +544,9 @@ async function initMap(){
       const c = comunaByNorm[normName(feature.properties.comuna)];
       layer._comunaData = c;
       layer.bindTooltip('', { sticky:true });
+      layer.on('mouseover', () => layer.setStyle({ weight:2.5 }));
+      layer.on('mouseout', () => layer.setStyle({ weight:1 }));
+      layer.on('click', () => openComunaDetail(c));
       if(c){
         // Etiqueta con el valor siempre visible, útil en pantalla de reunión (sin necesidad de pasar el mouse)
         const center = layer.getBounds().getCenter();
@@ -532,6 +562,37 @@ async function initMap(){
   updateMap();
 }
 document.getElementById('map-retry').addEventListener('click', initMap);
+
+function openComunaDetail(c){
+  if(!c) return;
+  window._openComuna = c;
+  const selected = Array.from(document.querySelectorAll('.spec-check:checked')).map(s => s.value);
+  const entries = Object.entries(c.porEspecialidad)
+    .filter(([esp]) => selected.length === 0 || selected.includes(esp))
+    .sort((a,b) => b[1] - a[1]);
+  const top = entries.slice(0, 5);
+  const restCount = entries.length - top.length;
+  const restSum = entries.slice(5).reduce((s,[,v]) => s+v, 0);
+  const max = top.length ? top[0][1] : 1;
+  const total = entries.reduce((s,[,v]) => s+v, 0);
+
+  document.getElementById('cd-title').textContent = c.comuna;
+  document.getElementById('cd-sub').textContent = selected.length === 0
+    ? `${total} personas en lista P75 · top especialidades`
+    : `${total} personas · dentro de las ${selected.length} especialidad${selected.length>1?'es':''} filtrada${selected.length>1?'s':''}`;
+  document.getElementById('cd-list').innerHTML = top.map(([esp,v]) => `
+    <div class="cd-row">
+      <span class="cname" title="${esp}">${esp}</span>
+      <span class="cbar-wrap"><span class="cbar" style="width:${max>0 ? (v/max*100) : 0}%"></span></span>
+      <span class="cval">${v}</span>
+    </div>
+  `).join('') + (restCount > 0 ? `<div class="cd-more">+ ${restCount} especialidad${restCount>1?'es':''} más (${restSum} personas)</div>` : '');
+  document.getElementById('comuna-detail').style.display = 'block';
+}
+document.getElementById('cd-close').addEventListener('click', () => {
+  document.getElementById('comuna-detail').style.display = 'none';
+  window._openComuna = null;
+});
 
 function updateMap(){
   if(!geoLayer) return;
@@ -577,6 +638,8 @@ function updateMap(){
       <span class="rval">${r.v}</span>
     </div>
   `).join('');
+
+  if(window._openComuna) openComunaDetail(window._openComuna);
 }
 
 window.addEventListener('load', initMap);
