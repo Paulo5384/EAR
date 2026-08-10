@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flujo Navegadores en Red — Reloncaví</title>
+<title>Flujograma decisional — Gestión EAR</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root{
@@ -89,9 +89,20 @@
   .branch:hover{border-color:var(--line-strong);}
   .branch.si{color:var(--lane-a);border-color:var(--lane-a);}
 
-  .converge-wrap{margin-top:26px;display:flex;justify-content:center;}
+  .converge-wrap{margin-top:0;display:flex;justify-content:center;}
   .converge{max-width:520px;width:100%;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;cursor:pointer;text-align:center;}
   .converge .node-title{color:var(--accent);} .converge .node-sub{color:#8a5427;}
+
+  .merge{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:14px;align-items:start;}
+  .merge-feed{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .merge-feed .feed-label{font-size:11.5px;font-weight:600;text-align:center;padding:5px 10px;border-radius:7px;}
+  .merge-feed.a .feed-label{background:var(--lane-a-tint);color:var(--lane-a);border:1px solid var(--lane-a);}
+  .merge-feed.b .feed-label{background:var(--lane-b-tint);color:var(--lane-b);border:1px solid var(--lane-b);}
+  .merge-feed svg{width:20px;height:20px;}
+  .merge-feed.a svg{color:var(--lane-a);}
+  .merge-feed.b svg{color:var(--lane-b);}
+  .merge-join{display:flex;justify-content:center;margin-top:2px;}
+  .merge-join svg{width:22px;height:22px;color:var(--accent);}
 
   footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;font-family:var(--mono);color:var(--ink-mute);text-align:center;max-width:960px;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px;}
 
@@ -123,9 +134,9 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Navegadores en Red · Unidad de Gestión Territorial · HPM</p>
-    <h1>Flujo de gestión de lista de espera</h1>
-    <p class="subtitle">Dos carriles paralelos —necesidad vigente y alternativas de resolución— que convergen cuando la persona confirma que aún requiere atención, más el mapa territorial de la red Reloncaví.</p>
+    <p class="eyebrow">Equipo Implementador · Atención Ambulatoria de Especialidades · HPM</p>
+    <h1>Flujograma decisional — Gestión de listas de espera (EAR)</h1>
+    <p class="subtitle">Dos carriles paralelos —necesidad vigente y alternativas de resolución— que convergen cuando la persona confirma que aún requiere atención y ya existe una modalidad aplicable disponible. Incluye el mapa territorial de la red Reloncaví.</p>
     <p class="meta" id="version-line"></p>
   </header>
 
@@ -163,6 +174,19 @@
       </div>
     </div>
 
+    <div class="merge">
+      <div class="merge-feed a">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        <span class="feed-label">Sí, requiere atención (Carril A)</span>
+      </div>
+      <div class="merge-feed b">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        <span class="feed-label">Modalidad aplicable disponible (Carril B)</span>
+      </div>
+    </div>
+    <div class="merge-join">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+    </div>
     <div class="converge-wrap">
       <div class="converge" id="convergeNode">
         <div class="node-title">Gestión efectiva de resolución</div>
@@ -207,7 +231,7 @@
     </div>
   </div>
 
-  <footer>Navegadores en Red · Unidad de Gestión Territorial · Servicio de Salud del Reloncaví</footer>
+  <footer>Equipo Implementador · Atención Ambulatoria de Especialidades · Servicio de Salud del Reloncaví</footer>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
